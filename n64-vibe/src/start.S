@@ -1,5 +1,5 @@
     .set noreorder
-    .text
+    .section .text.start, "ax", @progbits
     .globl _start
     .ent _start
 _start:
