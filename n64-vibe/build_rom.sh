@@ -6,8 +6,9 @@ mkdir -p build dist
 
 CLANG=${CLANG:-clang}
 
-$CLANG --target=mips64-unknown-elf -c -O2 -ffreestanding -fno-pic -mabi=n64 -march=mips3 -mno-abicalls src/main.c -o build/main.o
-ld.lld -m elf64btsmip -T linker.ld -e _start build/main.o -o build/game.elf
+$CLANG --target=mips64-unknown-elf -c -O2 -ffreestanding -fno-pic -mabi=n64 -march=mips3 -mno-abicalls -G0 src/main.c -o build/main.o
+$CLANG --target=mips64-unknown-elf -c -O2 -ffreestanding -fno-pic -mabi=n64 -march=mips3 -mno-abicalls -G0 src/start.S -o build/start.o
+ld.lld -m elf64btsmip -T linker.ld -e _start build/start.o build/main.o -o build/game.elf
 llvm-objcopy -O binary build/game.elf build/game.bin
 
 python3 - <<'PY'

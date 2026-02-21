@@ -142,7 +142,7 @@ static int overlaps(int ax, int ay, int as, int bx, int by, int bs) {
     return !(ax + as < bx || bx + bs < ax || ay + as < by || by + bs < ay);
 }
 
-void _start(void) {
+void game_main(void) {
     init_video();
 
     Enemy enemies[4] = {
