@@ -25,6 +25,14 @@ DONOR_ROM = os.environ.get('N64_DONOR_ROM')
 IPL3_PATH = os.environ.get('N64_IPL3')
 PARALLEL_RDP_NO_SMALL_TYPES = os.environ.get('PARALLEL_RDP_NO_SMALL_TYPES', '').strip().lower() in {'1', 'true', 'yes', 'on'}
 
+KNOWN_CIC_BY_IPL3_CRC32 = {
+    0x6170A4A1: 'CIC-NUS-6101',
+    0x90BB6CB5: 'CIC-NUS-6102',
+    0x0B050EE0: 'CIC-NUS-6103',
+    0x98BC2C86: 'CIC-NUS-6105',
+    0xACC8580A: 'CIC-NUS-6106',
+}
+
 
 def rol32(v: int, s: int) -> int:
     s &= 31
@@ -83,16 +91,21 @@ def load_ipl3(root: Path) -> bytes:
 
         return z64[0x40:0x1000]
 
-    # Fallback boot region: non-zero synthetic data avoids all-zero CIC fingerprint.
-    # For best CIC detection, provide N64_IPL3 or N64_DONOR_ROM.
-    stub = bytearray(0xFC0)
-    x = 0x6C8E9CF5
-    for i in range(0, len(stub), 4):
-        x = (1664525 * x + 1013904223) & 0xFFFFFFFF
-        struct.pack_into('>I', stub, i, x)
-    # Tiny bootstrap pattern at head (documentation marker + jump-like sequence bytes).
-    stub[0:16] = bytes.fromhex('3C08A400350800403C09800035290000')
-    return bytes(stub)
+    raise SystemExit(
+        'A known-good IPL3 is required. Set N64_DONOR_ROM (preferred) or N64_IPL3 '
+        'so CIC detection and boot sequencing are valid on emulators/hardware.'
+    )
+
+
+def detect_image_type(rom: bytes) -> str:
+    magic = rom[0:4]
+    if magic == b'\x80\x37\x12\x40':
+        return 'z64 (big-endian)'
+    if magic == b'\x40\x12\x37\x80':
+        return 'n64 (word-swapped little-endian)'
+    if magic == b'\x37\x80\x40\x12':
+        return 'v64 (byte-swapped halfwords)'
+    return f'unknown ({magic.hex()})'
 
 
 root = Path('.')
@@ -102,13 +115,15 @@ bootcode = load_ipl3(root)
 header = bytearray(0x40)
 struct.pack_into('>I', header, 0x00, 0x80371240)    # PI BSD Domain 1 register
 struct.pack_into('>I', header, 0x04, 0x0000000F)    # Clock rate
-struct.pack_into('>I', header, 0x08, 0x80001000)    # Entry point
+struct.pack_into('>I', header, 0x08, 0x80000400)    # Entry point (common homebrew start)
 struct.pack_into('>I', header, 0x0C, 0x00001444)    # Release offset
 
 name = ROM_NAME.encode('ascii', errors='ignore')[:20]
 header[0x20:0x34] = name.ljust(20, b' ')
-header[0x38] = ord(MAKER_CODE[0])
-header[0x39:0x3B] = GAME_CODE.encode('ascii', errors='ignore')[:2].ljust(2, b'0')
+# Manufacturer field is 32-bit at 0x38..0x3B; for homebrew set low byte to 'N'.
+header[0x3B] = ord(MAKER_CODE[0])
+# Game code/cartridge ID is 0x3C..0x3D.
+header[0x3C:0x3E] = GAME_CODE.encode('ascii', errors='ignore')[:2].ljust(2, b'0')
 header[0x3E] = ord(COUNTRY_CODE[0])
 header[0x3F] = ROM_VERSION
 
@@ -138,7 +153,22 @@ if PARALLEL_RDP_NO_SMALL_TYPES:
         ])
     )
 
-print(f'Wrote ROMs: {len(rom)} bytes, CRC1={crc1:08X}, CRC2={crc2:08X}')
-if not IPL3_PATH and not DONOR_ROM:
-    print('WARNING: using synthetic bootcode. Set N64_DONOR_ROM or N64_IPL3 for best CIC detection compatibility.')
+import zlib
+
+entry = struct.unpack_from('>I', rom, 0x08)[0]
+manufacturer = struct.unpack_from('>I', rom, 0x38)[0]
+cart_id = rom[0x3C:0x3E].decode('ascii', errors='replace')
+country = chr(rom[0x3E])
+version = rom[0x3F]
+image_name = rom[0x20:0x34].decode('ascii', errors='replace').rstrip()
+ipl3_crc32 = zlib.crc32(rom[0x40:0x1000]) & 0xFFFFFFFF
+cic_name = KNOWN_CIC_BY_IPL3_CRC32.get(ipl3_crc32, 'UNKNOWN')
+
+print(f'Wrote ROMs: {len(rom)} bytes')
+print(f'Validation: type={detect_image_type(rom)}, entry=0x{entry:08X}, name="{image_name}"')
+print(f'Validation: manufacturer=0x{manufacturer:08X}, cart_id={cart_id}, country={country}, version={version}')
+print(f'Validation: IPL3 CRC32=0x{ipl3_crc32:08X} ({cic_name}), CRC1=0x{crc1:08X}, CRC2=0x{crc2:08X}')
+
+if cic_name == 'UNKNOWN':
+    print('WARNING: IPL3 does not match known CIC fingerprints; emulator may fall back to guessed CIC behavior.')
 PY

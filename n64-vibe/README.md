@@ -27,12 +27,14 @@ Outputs:
 
 `build_rom.sh` now:
 
-- populates a non-zero 0x40..0xFFF bootcode area (IPL3 region),
+- requires a known-good IPL3 bootcode source (`N64_DONOR_ROM` or `N64_IPL3`) so CIC detection matches a real boot ROM,
+- links and writes a homebrew-friendly entrypoint (`0x80000400`) in both linker script and ROM header,
+- writes header fields at canonical offsets (manufacturer at `0x3B`, cart/game code at `0x3C..0x3D`),
 - computes and writes valid N64 CRC1/CRC2 values for the final image,
-- writes consistent header fields (title, maker code, game code, country code, version),
-- emits `.z64` first, then derives `.n64` by byte-order conversion.
+- emits `.z64` first, then derives `.n64` by deterministic word-byte swapping,
+- prints a validation summary (image type, entrypoint, header fields, IPL3 CRC32/CIC match, CRC1/CRC2).
 
-For best CIC detection in emulators, pass a real IPL3 via one of:
+Provide a real IPL3 via one of:
 
 ```bash
 N64_DONOR_ROM=/path/to/known-good.z64 ./build_rom.sh
@@ -40,7 +42,7 @@ N64_DONOR_ROM=/path/to/known-good.z64 ./build_rom.sh
 N64_IPL3=/path/to/ipl3_6102.bin ./build_rom.sh
 ```
 
-If neither variable is set, the script still builds a ROM with non-zero synthetic bootcode and valid CRCs, but some emulators may still report unknown CIC and fall back to 6102 behavior.
+If neither variable is set, the build now fails immediately to avoid producing malformed/ambiguous ROM images.
 
 Optional header overrides:
 
