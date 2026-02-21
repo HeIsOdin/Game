@@ -21,7 +21,7 @@ cd n64-vibe
 Outputs:
 
 - `n64-vibe/dist/VibeDodger.z64`
-- `n64-vibe/dist/VibeDodger.n64`
+- `n64-vibe/dist/VibeDodger.n64` (proper little-endian word-swapped image)
 
 ## Emulator compatibility
 

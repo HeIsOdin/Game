@@ -62,6 +62,12 @@ struct.pack_into('>I', rom, 0x10, crc1)
 struct.pack_into('>I', rom, 0x14, crc2)
 
 (root/'dist/VibeDodger.z64').write_bytes(rom)
-(root/'dist/VibeDodger.n64').write_bytes(rom)
+# `.n64` is little-endian word order. Emit a proper byteswapped image
+# instead of reusing native-endian `.z64` data.
+n64 = bytearray(len(rom))
+for i in range(0, len(rom), 4):
+    n64[i:i+4] = rom[i:i+4][::-1]
+
+(root/'dist/VibeDodger.n64').write_bytes(n64)
 print(f'Wrote ROMs: {len(rom)} bytes, CRC1={crc1:08X}, CRC2={crc2:08X}')
 PY
