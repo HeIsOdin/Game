@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mushroom Sprint</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <h1>Mushroom Sprint</h1>
+      <p class="subtitle">A super simple Nintendo-style 2D mini game</p>
+      <canvas id="game" width="960" height="540" aria-label="Mushroom Sprint game canvas"></canvas>
+      <div class="hud">
+        <span id="status">Collect all coins!</span>
+        <span id="score">Coins: 0 / 8</span>
+        <span id="lives">Lives: 3</span>
+      </div>
+      <p class="controls">Move: ← → or A D | Jump: Space / ↑ / W</p>
+    </main>
+    <script src="game.js"></script>
+  </body>
+</html>

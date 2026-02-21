@@ -1,13 +1,20 @@
-# Game
+# Mushroom Sprint (2D Nintendo-Style Mini Game)
 
-This repository includes a Nintendo 64 homebrew game:
+A tiny browser game inspired by classic Nintendo side-scrollers.
 
-- **Vibe Dodger** in `n64-vibe/`
-- Built ROM outputs: `n64-vibe/dist/VibeDodger.z64` and `.n64`
+## How to play
 
-Build with:
+- Move: `Arrow Left` / `Arrow Right` or `A` / `D`
+- Jump: `Space`, `Arrow Up`, or `W`
+- Goal: Collect all coins and avoid enemies.
+- You have 3 lives.
+
+## Run locally
+
+Because this is plain HTML/CSS/JS, you can open `index.html` directly or run a local server:
 
 ```bash
-cd n64-vibe
-./build_rom.sh
+python3 -m http.server 8000
 ```
+
+Then visit `http://localhost:8000`.
